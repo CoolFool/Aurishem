@@ -1,4 +1,7 @@
+.*
 *pkg.tar.zst
 pkg/
 src/
 *tar.gz
+.idea/
+!/.gitignore
