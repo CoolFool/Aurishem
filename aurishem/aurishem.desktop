@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0.0
+Name=aurishem
+Comment=Install packages directly from aur.archlinux.org
+Exec=aurishem %u
+Icon=/usr/share/icons/hicolor/48x48/apps/aurishem.png
+StartupNotify=true
+Terminal=false
+Categories=Utility;
+MimeType=x-scheme-handler/aurishem
+Type=Application

@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "aurishem"
+version = "0.1.0"
+description = "Install packages from aur.archlinux.org"
+authors = ["coolfool <coolfool149@gmail.com>"]
+license = "MIT License"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pydbus = "^0.6.0"
+PyGObject = "^3.42.0"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

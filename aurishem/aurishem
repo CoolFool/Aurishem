@@ -1,0 +1,280 @@
+#!/usr/bin/env python
+import subprocess
+import re
+from urllib.parse import urlparse, unquote
+import os
+from pydbus import SessionBus
+import shutil
+import sys
+import signal
+import logging
+import datetime
+
+
+def parse_pkgbuild(pkgbuild_path):
+    pkgbuild = {}
+    with open(pkgbuild_path, "r") as pkg:
+        content = pkg.read()
+        depends = re.findall(r'\bdepends=\(([^)]+)\)', content)
+        make_depends = re.findall(r"\bmakedepends=\(([^)]+)\)", content)
+        pkgver = re.findall(r"\bpkgver=([^\s]*)", content)
+        if len(depends) > 0:
+            pkgbuild["depends"] = [i for i in
+                                   depends[0].replace("\n", " ").replace("\"", "").replace("\'", "").split(" ") if
+                                   i != ""]
+        if len(make_depends) > 0:
+            pkgbuild["makedepends"] = [i for i in
+                                       make_depends[0].replace("\n", " ").replace("\"", "").replace("\'", "").split(" ")
+                                       if i != ""]
+        if len(pkgver) > 0:
+            pkgbuild["pkgver"] = pkgver[0].replace("\n", "").replace("\"", "").replace("\'", "")
+        else:
+            raise Exception("Package Version not found in PKGBUILD")
+    return pkgbuild
+
+
+def remove_ver(deps):
+    for p in range(len(deps) - 1):
+        deps[p] = re.split(r"<|>|=", deps[p])[0]
+        if not deps[p]:
+            deps.remove(deps[p])
+    return deps
+
+
+def run_cmd(cmd: list):
+    command = " ".join(i for i in cmd)
+    try:
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        for line in iter(process.stdout.readline, b''):
+            sys.stdout.write(line.decode(sys.stdout.encoding))
+            logger.info(line.decode("utf-8"))
+    except Exception as err:
+        logger.error(err)
+        notify(summary="Installing Package", body="Error occured while executing {}".format(command))
+        raise SystemExit(1)
+    data = process.communicate()
+    if cmd[0] == "pkexec" and process.returncode == 126:
+        notify(summary="Installing Package", body="Authorization could not be obtained", raise_exit=True)
+    if cmd[0] == "pkexec" and process.returncode == 127:
+        notify(summary="Installing Package", body="Authentication Failure", raise_exit=True)
+    data = {"retcode": process.returncode,
+            "stdout": data[0].decode(),
+            "stderr": data[1].rstrip(b'\n').decode()}
+    return data
+
+
+def install_deps(deps):
+    deps = remove_ver(deps)
+    cmd = ["pacman", "-Q"] + deps
+    data = run_cmd(cmd)
+    content = data["stdout"].split('\n')
+    packages = []
+    for i in content:
+        if i == "":
+            continue
+        pkg = i.split(" ")
+        packages.append(pkg[0])
+
+    not_installed = list(x for x in set(deps) ^ set(packages) if x != '')
+    if not_installed:
+        cmd = ["pkexec", "pacman", "-S", "--asdeps", "--noconfirm"] + not_installed
+        data = run_cmd(cmd)
+        if data["retcode"] != 0:
+            notify(summary="Running makepkg", body="Dependency installation failed", raise_exit=True)
+    return not_installed
+
+
+def uninstall_deps(packages: list):
+    cmd = ["pkexec", "pacman", "-R", "--noconfirm"] + packages
+    data = run_cmd(cmd)
+    if data["retcode"] == 0:
+        notify(summary="Installing Package", body="Successfully uninstalled make dependencies")
+        return
+    else:
+        notify(summary="Installing Package", body="make dependencies not uninstalled", raise_exit=True)
+
+
+def install_package(path, package, pkg_name: str):
+    os.chdir(path)
+    cmd = ["pkexec", "pacman", "-U", "--noconfirm"] + [path + "/" + package]
+    data = run_cmd(cmd)
+    if data["retcode"] == 0:
+        notify(summary="Installing Package", body="Successfully Installed {} {}".format(pkg_name, log_notice))
+        shutil.rmtree(path, ignore_errors=True)
+        return
+    else:
+        shutil.rmtree(path, ignore_errors=True)
+        notify(summary="Installing Package", body="Installation failed for {}".format(pkg_name), raise_exit=True)
+
+
+def makepkg(path: str):
+    os.chdir(path)
+    packagebuild = parse_pkgbuild(path + "/PKGBUILD")
+    if "depends" in packagebuild:
+        notify(summary="Running makepkg", body="Installing dependencies")
+        installed_deps = install_deps(packagebuild["depends"])
+        if installed_deps:
+            notify(summary="Running makepkg", body="Successfully installed dependencies")
+    if "make_depends" in packagebuild:
+        notify(summary="Running makepkg", body="Installing make dependencies")
+        installed_make_deps = install_deps(packagebuild["make_depends"])
+        if installed_make_deps:
+            notify(summary="Running makepkg", body="Successfully installed make dependencies")
+    cmd = ["makepkg"]
+    data = run_cmd(cmd)
+    if parse_makepkg_retcode(code=data["retcode"]):
+        if "make_depends" in packagebuild:
+            if installed_make_deps:
+                notify(summary="Running makepkg", body="Uninstalling make dependencies")
+                uninstall_deps(packages=installed_make_deps)
+                notify(summary="Running makepkg", body="Successfully uninstalled make dependencies")
+        return packagebuild
+    else:
+        notify(summary="Running makepkg", body="Package Build Failed", raise_exit=True)
+
+
+def notify(summary, body: str, raise_exit=False, noti_id=0, time=10000):
+    if raise_exit:
+        body = body + log_notice
+    notification_id = notifications.Notify("aurishem", noti_id, notification_icon, summary, body, [], {}, time)
+    if raise_exit:
+        logger.error(body)
+        raise SystemExit(1)
+    return notification_id
+
+
+def parse_makepkg_retcode(code: int):
+    if code == 0:
+        return True
+    elif code == 1:
+        notify(summary="Running makepkg", body="Unknown cause of failure", raise_exit=True)
+    elif code == 2:
+        notify(summary="Running makepkg", body="Error in configuration file.", raise_exit=True)
+    elif code == 3:
+        notify(summary="Running makepkg", body="User specified an invalid option.", raise_exit=True)
+    elif code == 4:
+        notify(summary="Running makepkg", body="Error in user-supplied function in PKGBUILD.", raise_exit=True)
+    elif code == 5:
+        notify(summary="Running makepkg", body="Failed to create a viable package.", raise_exit=True)
+    elif code == 6:
+        notify(summary="Running makepkg", body="A source or auxiliary file specified in the PKGBUILD is missing.",
+               raise_exit=True)
+    elif code == 7:
+        notify(summary="Running makepkg", body="The PKGDIR is missing.", raise_exit=True)
+    elif code == 8:
+        notify(summary="Running makepkg", body="Failed to install dependencies.", raise_exit=True)
+    elif code == 9:
+        notify(summary="Running makepkg", body="Failed to remove dependencies.", raise_exit=True)
+    elif code == 10:
+        notify(summary="Running makepkg", body="User attempted to run makepkg as root.", raise_exit=True)
+    elif code == 11:
+        notify(summary="Running makepkg", body="User lacks permissions to build or install to a given location.",
+               raise_exit=True)
+    elif code == 12:
+        notify(summary="Running makepkg", body="Error parsing PKGBUILD.", raise_exit=True)
+    elif code == 13:
+        notify(summary="Running makepkg", body="A package has already been built.")
+        return True
+    elif code == 14:
+        notify(summary="Running makepkg", body="The package failed to install.", raise_exit=True)
+    elif code == 15:
+        notify(summary="Running makepkg", body="Programs necessary to run makepkg are missing.", raise_exit=True)
+    elif code == 16:
+        notify(summary="Running makepkg", body="Specified GPG key does not exist or failed to sign package.",
+               raise_exit=True)
+
+
+def get_pacman_package(dirname, pkgname, pkgver: str):
+    for root, dirs, files in os.walk(dirname):
+        for f in files:
+            if pkgname in f and pkgver in f and "pkg.tar.zst" in f:
+                return f
+        break
+
+
+def check_valid_aur_url(url: str):
+    expression = r"^https:\/\/aur\.archlinux\.org\/packages\/([a-zA-Z0-9-]*$)"
+    match = re.match(expression, url)
+    if not match:
+        body = "{} is invalid Arch User Repository url".format(url)
+        notify(summary="Validating url", body=body)
+    return url
+
+
+def install(url: str):
+    global package_name
+    package_name = urlparse(url).path.split("/")[-1]
+    if package_name == "":
+        notify(summary="Validating url", body="Package name is empty", raise_exit=True)
+
+    git_url = "https://aur.archlinux.org/{}.git".format(package_name)
+    package_path = "/var/tmp/aurishem/{}".format(package_name)
+    if os.path.isdir(package_path):
+        if re.match('^[a-zA-Z0-9-]+$', package_name) is not None:
+            run_cmd(["rm", "-rf"] + [package_path])
+
+    package_path_link = '<a href="file://{0}">{0}</a>'.format(package_path)
+    notify(summary="Installing Package", body="Cloning {} to {}".format(package_name, package_path_link))
+    clone = run_cmd(["git", "clone", git_url, package_path])
+    if clone["retcode"] == 0:
+        if not [f for f in os.listdir(package_path) if not f.startswith('.')]:
+            shutil.rmtree(package_path)
+            notify(summary="Installing Package", body="Package {} not found".format(package_name), raise_exit=True)
+        else:
+            notify(summary="Installing Package", body="Installing {} {}".format(package_name, log_notice))
+            parse_pkgbuild(package_path + "/PKGBUILD")
+            pkgbuild = makepkg(package_path)
+            pacman_package = get_pacman_package(dirname=package_path, pkgname=package_name, pkgver=pkgbuild["pkgver"])
+            install_package(path=package_path, package=pacman_package, pkg_name=package_name)
+            return
+    else:
+        shutil.rmtree(package_path, ignore_errors=True)
+        notify(summary="Installing Package", body="Error occured while cloning {}".format(git_url), raise_exit=True)
+
+
+def signal_handler(sig, frame):
+    notify(summary="Installing Package", body="Aurishem terminated")
+    sys.exit(1)
+
+
+if __name__ == "__main__":
+    if os.getuid() != 0:
+        bus = SessionBus()
+        notifications = bus.get('.Notifications')
+    else:
+        raise SystemExit("Aurishem cannot be run as root")
+
+    if not os.path.isdir("/var/tmp/aurishem"):
+        os.makedirs("/var/tmp/aurishem", exist_ok=True)
+    log_file_time = datetime.datetime.now().strftime("%d-%m-%Y-%H%M%S")
+    log_file = "/var/tmp/aurishem/aurishem-{}.log".format(log_file_time)
+    logging.basicConfig(format='"%(asctime)s — %(levelname)s — %(funcName)s:%(lineno)d — %(message)s"',
+                        level=logging.DEBUG,
+                        handlers=[logging.FileHandler(log_file),
+                                  logging.StreamHandler(sys.stdout)])
+    logger = logging.getLogger(__file__)
+    log_notice = '\nCheck aurishem logs at <a href="file://{0}">{0}</a>'.format(log_file)
+    os.environ['DBUS_SESSION_BUS_ADDRESS'] = 'unix:path=/run/user/{}/bus'.format(os.getuid())
+    notification_icon = "file:///usr/share/icons/hicolor/48x48/apps/aurishem.png"
+
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    try:
+        global package_name
+        if len(sys.argv) == 2:
+            valid_aurishem_param = r"^aurishem:\/\/https:\/\/aur\.archlinux\.org\/packages\/([a-zA-Z0-9-]*$)"
+            package_link = unquote(sys.argv[1])
+            is_valid_param = re.match(valid_aurishem_param, package_link)
+            if is_valid_param:
+                package_link = package_link.split("aurishem://")[1]
+                aur_url = check_valid_aur_url(package_link)
+                install(aur_url)
+            else:
+                notify(summary="Installing Package", body="Bad Parameters for Aurishem", raise_exit=True)
+        else:
+            notify(summary="Installing Package", body="Bad Parameters for Aurishem", raise_exit=True)
+    except Exception as e:
+        logger.error(e)
+        notify(summary="Installing Package", body="Error occured {}".format(log_notice))
