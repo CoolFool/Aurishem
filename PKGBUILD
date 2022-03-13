@@ -7,6 +7,7 @@ arch=("any")
 url="https://github.com/coolfool/aurishem"
 license=('MIT')
 depends=('python-pydbus' 'python-gobject')
+makedepends=('git')
 source=("git://github.com/coolfool/${pkgname}")
 sha1sums=('SKIP')
 
