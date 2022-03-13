@@ -2,7 +2,7 @@
 pkgname=aurishem
 pkgver=1.0.0
 pkgrel=1
-pkgdesc="Install packages directly from aur.archlinux.org"
+pkgdesc="Safe and Easy way to build and install packages directly from Arch User Repository"
 arch=("any")
 url="https://github.com/coolfool/aurishem"
 license=('MIT')
