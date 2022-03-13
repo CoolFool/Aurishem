@@ -1,7 +1,7 @@
 [Desktop Entry]
 Version=1.0.0
 Name=aurishem
-Comment=Install packages directly from aur.archlinux.org
+Comment=Safe and Easy way to build and install packages directly from Arch User Repository
 Exec=aurishem %u
 Icon=/usr/share/icons/hicolor/48x48/apps/aurishem.png
 StartupNotify=true
