@@ -63,10 +63,10 @@
     - **Coming Soon**
   - #### Chrome/Chromium
     - **Publishing to Chrome Webstore requires creating an account,for the time being follow the steps provided below:**
-      - Download this repo locally
+      - Download [aurishem-extension](https://github.com/CoolFool/aurishem-extension) repo locally
       - Visit `chrome://extensions` in Google Chrome/Chromium
       - Click on **Load Unpacked**
-      - Select the **aurishem** directory from the locally downloaded copy of this repo
+      - Select the **aurishem** directory from the locally downloaded copy of [aurishem-extension](https://github.com/CoolFool/aurishem-extension)
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 ## Contributing
