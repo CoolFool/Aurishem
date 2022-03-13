@@ -58,11 +58,15 @@
        - ```makepkg -si```
   ### 2) Install browser extension
   - #### Mozilla Firefox
-    - `coming soon`
+    [![Firefox Addon](https://raw.githubusercontent.com/CoolFool/aurishem-extension/main/static/get-the-addon.png)](https://addons.mozilla.org/en-US/firefox/addon/aurishem/)
   - #### Microsoft Edge
-    - `coming soon`
+    - **Coming Soon**
   - #### Chrome/Chromium
-    - `coming soon`
+    - **Publishing to Chrome Webstore requires creating an account,for the time being follow the steps provided below:**
+      - Download this repo locally
+      - Visit `chrome://extensions` in Google Chrome/Chromium
+      - Click on **Load Unpacked**
+      - Select the **aurishem** directory from the locally downloaded copy of this repo
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 ## Contributing
