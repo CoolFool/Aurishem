@@ -36,7 +36,8 @@
 - There are two parts to installing aurishem
   ### 1) Install the aurishem backend
   - #### From Arch User Repository using aur helpers
-       - ```yay -S aurishem``` **OR**  ```paru -S aurishem```
+       - The arch user repository package can be found on [https://aur.archlinux.org/packages/aurishem](https://aur.archlinux.org/packages/aurishem)
+       - If you have **yay** or **paru** as aur helpers run ```yay -S aurishem``` **OR**  ```paru -S aurishem``` respectively
        - If using any other aur helper lookup the command for installing packages and install according
   - #### Building the package manually
        - ```git clone https://aur.archlinux.org/aurishem.git```
