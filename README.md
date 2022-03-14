@@ -5,7 +5,7 @@
 
 ## Contents
 - [Features](#Features)
-- [Screenshots and Demo](#Screenshots-and-Demo)
+- [Screenshots](#Screenshots)
 - [Installation](#Installation)
 - [Contributing](#Contributing)
 - [Authors](#Authors)
@@ -22,27 +22,13 @@
 - Get notified at each step
 
 
-## Screenshots and Demo
+## Screenshots
 
-<details open="open">
-    <summary>Screenshots</summary>
-
-  | Policy Kit Prompt             | Live Log                  |
-|-------------------------------|---------------------------|
-  | `Coming Soon`                 | `Coming soon`             |
-  | **Informative Notifications** | **Install button on AUR** |
-  | `Coming Soon`                 | `Coming soon`             |
-
-</details>
-
-<details open="open">
-    <summary>Demo</summary>
-
-  | Demo          |
-|---------------|
-  | `Coming Soon` |
-
-</details>
+| Install button on PKGBUILD page                                                                                       | Informative Notifications                                                                                                |
+|-----------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| ![Install Button](https://raw.githubusercontent.com/CoolFool/aurishem-extension/main/static/install_button.png)       | ![Informative Notifications](https://raw.githubusercontent.com/CoolFool/aurishem-extension/main/static/notification.png) |                                                                                                               |                                                                                                               |
+| **Policy Kit Prompt**                                                                                                 | **Live Log using** `tail -f`                                                                                             |
+| ![Policy Kit Prompt](https://raw.githubusercontent.com/CoolFool/aurishem-extension/main/static/policy-kit-prompt.png) | ![Live Log](https://raw.githubusercontent.com/CoolFool/aurishem-extension/main/static/live-log.png)                      |
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
