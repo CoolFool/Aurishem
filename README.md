@@ -46,9 +46,7 @@
   ### 2) Install browser extension
   - #### Mozilla Firefox
     [![Firefox Addon](https://raw.githubusercontent.com/CoolFool/aurishem-extension/main/static/get-the-addon.png)](https://addons.mozilla.org/en-US/firefox/addon/aurishem/)
-  - #### Microsoft Edge
-    - **Coming Soon**
-  - #### Chrome/Chromium
+  - #### Chrome and Chromium based web-browser
     - **Publishing to Chrome Webstore requires creating an account,for the time being follow the steps provided below:**
       - Download [aurishem-extension](https://github.com/CoolFool/aurishem-extension) repo locally
       - Visit `chrome://extensions` in Google Chrome/Chromium
