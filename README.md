@@ -4,12 +4,12 @@
 </div>
 
 ## Contents
-- [Features](#Features)
-- [Screenshots](#Screenshots)
-- [Installation](#Installation)
-- [Contributing](#Contributing)
-- [Authors](#Authors)
-- [License](#License)
+- [Features](#features)
+- [Screenshots](#screenshots)
+- [Installation](#installation)
+- [Contributing](#contributing)
+- [Authors](#authors)
+- [License](#license)
 
 
 ## Features
